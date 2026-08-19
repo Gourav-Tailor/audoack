@@ -1,373 +1,110 @@
 # Audoack Flutter Mobile App
 
-A Flutter mobile client for the Audoack backend.
+Flutter client for the Audoack backend.
 
-The app currently provides:
+## Existing features
 
 - Username/password login
-- Persistent login username
-- User device list
-- Device-specific latest analysis
-- Manual refresh
-- Configurable polling: 5, 10, 15, 30, or 60 seconds
-- Android HTTP development support for the current backend
+- Persistent username
+- Device list
+- Latest analysis per device
+- Configurable analysis polling
 
-## Backend
+## New live recording feature
 
-The starter configuration uses:
+The app can now:
 
-`http://34.148.248.202/`
+- Store a recording-device token using Android secure storage.
+- Record exactly 5 seconds per audio chunk.
+- Upload each WAV chunk to:
+  - `POST /api/v1/sessions/`
+  - `POST /api/v1/sessions/<batch_id>/chunks/`
+- Select the recording interval from a dropdown.
+- Supported intervals: 5, 10, 15, 20, 25, 30, 60, 120, 300 seconds.
+- Stop the recording session and call the backend finalize endpoint.
 
-Expected API endpoints:
+The interval is a start-to-start interval.
 
-- `POST /api/login`
-- `GET /api/devices?user={username}`
-- `GET /api/analysis?user={username}&device={deviceId}`
+Example:
 
-Expected login request:
+```text
+5 seconds:
+record 5s -> upload -> record
 
-```json
-{
-  "username": "your_username",
-  "password": "your_password"
-}
+10 seconds:
+record 5s -> wait 5s -> record
+
+30 seconds:
+record 5s -> wait 25s -> record
 ```
 
-Expected login response:
+### Token authentication
 
-```json
-{
-  "success": true,
-  "token": "optional-token"
-}
+The live recording API uses:
+
+```text
+Authorization: Token <device-token>
 ```
 
-Expected devices response:
+This is separate from the existing logged-in mobile user's Bearer token.
 
-```json
-{
-  "devices": [
-    {
-      "id": 1,
-      "name": "Device 1"
-    }
-  ]
-}
+### Backend endpoints
+
+```text
+POST /api/v1/sessions/
+POST /api/v1/sessions/<batch_id>/chunks/
+POST /api/v1/sessions/<batch_id>/finalize/
 ```
 
-Expected analysis response:
+The backend already supports token-authenticated device sessions and chunk uploads.
 
-```json
-{
-  "latestAnalysis": {
-    "result": "Analysis result",
-    "timestamp": "2026-08-18T12:00:00Z"
-  }
-}
-```
+## Install
 
-If your Django API uses trailing slashes, authentication tokens, different field names, or different response structures, update `lib/services/api_service.dart`.
-
-## Requirements
-
-Install:
-
-1. Flutter SDK
-2. Android Studio
-3. Android SDK
-4. Android emulator or a physical Android phone
-
-Verify Flutter:
-
-```bash
-flutter doctor
-```
-
-Check available devices:
-
-```bash
-flutter devices
-```
-
-## Getting the app running
-
-### 1. Extract the ZIP
-
-Extract `audoack.zip`.
-
-Open a terminal in the extracted project directory:
-
-```bash
-cd audoack
-```
-
-### 2. Install dependencies
-
-```bash
+```powershell
 flutter pub get
-```
-
-### 3. Check the project
-
-```bash
 flutter analyze
+flutter run -d emulator-5554
 ```
 
-### 4. Start an Android emulator
+## Android permissions
 
-Open Android Studio:
+The project now declares:
 
-`Device Manager -> Start an emulator`
+- `RECORD_AUDIO`
+- `INTERNET`
+- `FOREGROUND_SERVICE`
+- `FOREGROUND_SERVICE_MICROPHONE`
 
-Or connect an Android phone with USB debugging enabled.
+The current implementation records while the Flutter application is active. Foreground-service execution is prepared at the manifest level, but a dedicated Android foreground-service implementation is still required for guaranteed screen-off/background recording.
 
-Verify:
+## HTTP development
 
-```bash
-flutter devices
-```
-
-### 5. Run the app
-
-```bash
-flutter run
-```
-
-Or select a specific device:
-
-```bash
-flutter run -d <device-id>
-```
-
-## Android HTTP development configuration
-
-The current backend uses HTTP:
-
-`http://34.148.248.202/`
-
-Android blocks cleartext HTTP by default. The included Android manifest enables cleartext traffic for development.
-
-This is suitable for development/testing only.
-
-For production, use HTTPS, for example:
-
-`https://api.example.com/`
-
-and remove the cleartext HTTP permission.
-
-## Project structure
+The configured backend is:
 
 ```text
-audoack/
-├── android/
-│   └── app/
-│       └── src/
-│           └── main/
-│               └── AndroidManifest.xml
-├── ios/
-├── lib/
-│   ├── main.dart
-│   ├── models/
-│   │   ├── analysis.dart
-│   │   └── device.dart
-│   ├── screens/
-│   │   ├── analysis_screen.dart
-│   │   ├── devices_screen.dart
-│   │   └── login_screen.dart
-│   └── services/
-│       └── api_service.dart
-├── pubspec.yaml
-└── README.md
+http://34.148.248.202
 ```
 
-## Build Android APK
-
-Debug APK:
-
-```bash
-flutter build apk --debug
-```
-
-Release APK:
-
-```bash
-flutter build apk --release
-```
-
-The release APK will be:
-
-```text
-build/app/outputs/flutter-apk/app-release.apk
-```
-
-## Build Play Store AAB
-
-```bash
-flutter build appbundle --release
-```
-
-Output:
-
-```text
-build/app/outputs/bundle/release/app-release.aab
-```
-
-Before publishing, configure an Android release signing key.
-
-## API authentication
-
-The starter implementation supports an optional Bearer token returned by login:
-
-```json
-{
-  "success": true,
-  "token": "..."
-}
-```
-
-The token is attached as:
-
-```text
-Authorization: Bearer <token>
-```
-
-The current sample does not persist the token across application restarts. For production, use secure storage and implement refresh-token handling if the backend supports it.
-
-## Important production recommendation
-
-Do not rely on:
-
-```text
-GET /api/devices?user=username
-```
-
-as the security boundary.
-
-The backend should authenticate the user and derive the user identity from the access token/session.
-
-A better API design is:
-
-```text
-POST /api/auth/login/
-GET  /api/devices/
-GET  /api/devices/{device_id}/latest-analysis/
-GET  /api/devices/{device_id}/analysis-history/
-```
-
-## Polling behavior
-
-When a device analysis screen opens:
-
-1. The latest analysis is fetched immediately.
-2. Automatic polling starts.
-3. The selected interval controls subsequent requests.
-4. Changing the interval restarts the timer.
-5. Leaving the screen cancels the timer.
-
-Supported intervals:
-
-- 5 seconds
-- 10 seconds
-- 15 seconds
-- 30 seconds
-- 60 seconds
+Cleartext HTTP is enabled for development. Use HTTPS before production deployment.
 
 ## Troubleshooting
 
-### `flutter` command not found
+If Android installation fails, verify ADB:
 
-Install Flutter and add its `bin` directory to your PATH.
+```powershell
+$SDK="$env:LOCALAPPDATA\Android\Sdk"
+$ADB="$SDK\platform-tools\adb.exe"
 
-Then reopen the terminal and run:
-
-```bash
-flutter doctor
+Test-Path $ADB
+& $ADB kill-server
+& $ADB start-server
+& $ADB devices
 ```
 
-### No Android device found
+Then:
 
-Run:
-
-```bash
-flutter devices
+```powershell
+flutter clean
+flutter pub get
+flutter run -d emulator-5554
 ```
-
-If using an emulator, start it from Android Studio Device Manager.
-
-If using a physical phone:
-
-- Enable Developer Options.
-- Enable USB debugging.
-- Connect the phone.
-- Accept the debugging authorization prompt.
-
-### HTTP connection fails
-
-Confirm the backend is reachable:
-
-```bash
-curl http://34.148.248.202/
-```
-
-Also confirm the Android manifest contains:
-
-```xml
-android:usesCleartextTraffic="true"
-```
-
-### Login returns 404
-
-Your backend probably uses a different URL or trailing slash.
-
-For example:
-
-```text
-/api/login/
-```
-
-instead of:
-
-```text
-/api/login
-```
-
-Update `lib/services/api_service.dart`.
-
-### Login returns 401/403
-
-Check the backend authentication requirements. The sample API service currently assumes a JSON username/password login.
-
-### Devices are empty
-
-Check the actual JSON returned by the backend and make sure it contains:
-
-```json
-{
-  "devices": []
-}
-```
-
-If your API uses another field, update `getDevices()`.
-
-## Development workflow
-
-After changing Dart code:
-
-```bash
-flutter run
-```
-
-Flutter hot reload is available while the app is running.
-
-Before committing:
-
-```bash
-flutter analyze
-flutter test
-```
-
-## Current scope
-
-This ZIP is a frontend starter designed around the API contract above. It does not modify the Django backend.
-
-For production integration, align `api_service.dart` with the actual Django URLs, authentication mechanism, serializers, and response JSON.

@@ -12,7 +12,6 @@ void main() {
 
 class AutoAceApp extends StatefulWidget {
   const AutoAceApp({super.key});
-
   @override
   State<AutoAceApp> createState() => _AutoAceAppState();
 }
@@ -31,13 +30,8 @@ class _AutoAceAppState extends State<AutoAceApp> {
   Future<void> loadSession() async {
     final prefs = await SharedPreferences.getInstance();
     final username = prefs.getString('username');
-
     if (!mounted) return;
-
-    setState(() {
-      savedUsername = username;
-      loading = false;
-    });
+    setState(() { savedUsername = username; loading = false; });
   }
 
   @override
@@ -45,19 +39,11 @@ class _AutoAceAppState extends State<AutoAceApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Audoack',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.blue,
-      ),
+      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.blue),
       home: loading
-          ? const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            )
+          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
           : savedUsername != null
-              ? DevicesScreen(
-                  username: savedUsername!,
-                  apiService: apiService,
-                )
+              ? DevicesScreen(username: savedUsername!, apiService: apiService)
               : LoginScreen(apiService: apiService),
     );
   }
