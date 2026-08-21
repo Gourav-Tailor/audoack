@@ -24,7 +24,7 @@ class RecordingSnapshot {
 
 class LiveRecordingService {
   LiveRecordingService({
-    this.baseUrl = 'http://34.148.248.202',
+    this.baseUrl = 'https://audoack.in',
     this.onStatus,
   });
 

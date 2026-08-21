@@ -16,3 +16,5 @@ android/key.properties
 .vscode/
 # Widget Preview related
 .widget_preview/
+*.jks
+*.keystore

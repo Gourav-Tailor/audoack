@@ -1,4 +1,4 @@
-package com.example.audoack
+package `in`.audoack.app
 
 import io.flutter.embedding.android.FlutterActivity
 

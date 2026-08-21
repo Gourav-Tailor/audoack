@@ -9,7 +9,7 @@ import '../models/analysis.dart';
 import '../models/device.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://34.148.248.202';
+  static const String baseUrl = 'https://audoack.in';
   static const String _tokenKey = 'mobile_auth_token';
   static const String _deviceTokenKey = 'recording_device_token';
 
@@ -25,10 +25,7 @@ class ApiService {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: jsonEncode({
-        'username': username,
-        'password': password,
-      }),
+      body: jsonEncode({'username': username, 'password': password}),
     );
 
     if (response.statusCode != 200) return false;
@@ -70,7 +67,9 @@ class ApiService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to load devices: ${response.statusCode} ${response.body}');
+      throw Exception(
+        'Failed to load devices: ${response.statusCode} ${response.body}',
+      );
     }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -88,7 +87,9 @@ class ApiService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to load analysis: ${response.statusCode} ${response.body}');
+      throw Exception(
+        'Failed to load analysis: ${response.statusCode} ${response.body}',
+      );
     }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -117,19 +118,19 @@ class ApiService {
     required String deviceToken,
     String title = 'Audoack Live Recording',
   }) async {
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/api/v1/sessions/'),
-    )
-      ..headers['Authorization'] = 'Token ${deviceToken.trim()}'
-      ..headers['Accept'] = 'application/json'
-      ..fields['title'] = title;
+    final request =
+        http.MultipartRequest('POST', Uri.parse('$baseUrl/api/v1/sessions/'))
+          ..headers['Authorization'] = 'Token ${deviceToken.trim()}'
+          ..headers['Accept'] = 'application/json'
+          ..fields['title'] = title;
 
     final response = await request.send();
     final body = await response.stream.bytesToString();
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw HttpException('Session creation failed: ${response.statusCode} $body');
+      throw HttpException(
+        'Session creation failed: ${response.statusCode} $body',
+      );
     }
 
     final data = jsonDecode(body) as Map<String, dynamic>;
@@ -147,18 +148,21 @@ class ApiService {
     required int index,
     required File audioFile,
   }) async {
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/api/v1/sessions/$batchId/chunks/'),
-    )
-      ..headers['Authorization'] = 'Token ${deviceToken.trim()}'
-      ..headers['Accept'] = 'application/json'
-      ..fields['index'] = index.toString()
-      ..files.add(await http.MultipartFile.fromPath(
-        'chunk_data',
-        audioFile.path,
-        filename: 'chunk_${index.toString().padLeft(4, '0')}.wav',
-      ));
+    final request =
+        http.MultipartRequest(
+            'POST',
+            Uri.parse('$baseUrl/api/v1/sessions/$batchId/chunks/'),
+          )
+          ..headers['Authorization'] = 'Token ${deviceToken.trim()}'
+          ..headers['Accept'] = 'application/json'
+          ..fields['index'] = index.toString()
+          ..files.add(
+            await http.MultipartFile.fromPath(
+              'chunk_data',
+              audioFile.path,
+              filename: 'chunk_${index.toString().padLeft(4, '0')}.wav',
+            ),
+          );
 
     final response = await request.send();
     final body = await response.stream.bytesToString();
@@ -168,7 +172,9 @@ class ApiService {
     }
 
     final data = jsonDecode(body);
-    if (data is Map && data['chunk_queued'] != true && data['duplicate'] != true) {
+    if (data is Map &&
+        data['chunk_queued'] != true &&
+        data['duplicate'] != true) {
       throw HttpException('Chunk was not queued: $body');
     }
   }
@@ -186,7 +192,9 @@ class ApiService {
     );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw HttpException('Session finalization failed: ${response.statusCode} ${response.body}');
+      throw HttpException(
+        'Session finalization failed: ${response.statusCode} ${response.body}',
+      );
     }
   }
 
@@ -194,9 +202,7 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_tokenKey);
 
-    final headers = <String, String>{
-      'Accept': 'application/json',
-    };
+    final headers = <String, String>{'Accept': 'application/json'};
 
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
