@@ -59,11 +59,25 @@ class _DevicesScreenState extends State<DevicesScreen> {
       final result = await widget.apiService.getDevices();
       if (!mounted) return;
       setState(() => devices = result);
+    } on AuthException {
+      await _redirectToLogin();
     } catch (_) {
       if (mounted) setState(() => error = 'Unable to load devices.');
     } finally {
       if (mounted) setState(() => loading = false);
     }
+  }
+
+  Future<void> _redirectToLogin() async {
+    await widget.apiService.clearAuthSession();
+    if (!mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => LoginScreen(apiService: widget.apiService),
+      ),
+      (_) => false,
+    );
   }
 
   Future<void> configureToken() async {
@@ -159,8 +173,10 @@ class _DevicesScreenState extends State<DevicesScreen> {
     });
   }
 
-  void logout() {
-    widget.apiService.logout();
+  Future<void> logout() async {
+    await widget.apiService.logout();
+    if (!mounted) return;
+
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => LoginScreen(apiService: widget.apiService),

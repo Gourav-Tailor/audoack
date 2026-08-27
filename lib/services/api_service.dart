@@ -8,9 +8,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/analysis.dart';
 import '../models/device.dart';
 
+class AuthException implements Exception {
+  final String message;
+
+  const AuthException([this.message = 'Authentication required.']);
+
+  @override
+  String toString() => message;
+}
+
 class ApiService {
   static const String baseUrl = 'https://audoack.in';
   static const String _tokenKey = 'mobile_auth_token';
+  static const String _usernameKey = 'username';
   static const String _deviceTokenKey = 'recording_device_token';
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
@@ -41,12 +51,18 @@ class ApiService {
     return true;
   }
 
+  Future<void> clearAuthSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_usernameKey);
+  }
+
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_tokenKey);
 
-    if (token != null && token.isNotEmpty) {
-      try {
+    try {
+      if (token != null && token.isNotEmpty) {
         await http.post(
           Uri.parse('$baseUrl/api/v1/mobile/logout/'),
           headers: {
@@ -54,9 +70,9 @@ class ApiService {
             'Authorization': 'Bearer $token',
           },
         );
-      } finally {
-        await prefs.remove(_tokenKey);
       }
+    } finally {
+      await clearAuthSession();
     }
   }
 
@@ -65,6 +81,8 @@ class ApiService {
       Uri.parse('$baseUrl/api/v1/mobile/devices/'),
       headers: await _headers(),
     );
+
+    _throwIfUnauthorized(response.statusCode);
 
     if (response.statusCode != 200) {
       throw Exception(
@@ -86,6 +104,8 @@ class ApiService {
       headers: await _headers(),
     );
 
+    _throwIfUnauthorized(response.statusCode);
+
     if (response.statusCode != 200) {
       throw Exception(
         'Failed to load analysis: ${response.statusCode} ${response.body}',
@@ -95,7 +115,9 @@ class ApiService {
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (data['latestAnalysis'] == null) return null;
 
-    return Analysis.fromJson(Map<String, dynamic>.from(data['latestAnalysis']));
+    return Analysis.fromJson(
+      Map<String, dynamic>.from(data['latestAnalysis']),
+    );
   }
 
   Future<void> setRecordingDeviceToken(String token) async {
@@ -119,7 +141,10 @@ class ApiService {
     String title = 'Audoack Live Recording',
   }) async {
     final request =
-        http.MultipartRequest('POST', Uri.parse('$baseUrl/api/v1/sessions/'))
+        http.MultipartRequest(
+            'POST',
+            Uri.parse('$baseUrl/api/v1/sessions/'),
+          )
           ..headers['Authorization'] = 'Token ${deviceToken.trim()}'
           ..headers['Accept'] = 'application/json'
           ..fields['title'] = title;
@@ -136,7 +161,9 @@ class ApiService {
     final data = jsonDecode(body) as Map<String, dynamic>;
     final batchId = data['batch_id']?.toString();
     if (batchId == null || batchId == 'null' || batchId.isEmpty) {
-      throw const FormatException('Session response did not contain batch_id.');
+      throw const FormatException(
+        'Session response did not contain batch_id.',
+      );
     }
 
     return batchId;
@@ -202,12 +229,19 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_tokenKey);
 
-    final headers = <String, String>{'Accept': 'application/json'};
-
-    if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
+    if (token == null || token.trim().isEmpty) {
+      throw const AuthException();
     }
 
-    return headers;
+    return {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
+
+  void _throwIfUnauthorized(int statusCode) {
+    if (statusCode == 401 || statusCode == 403) {
+      throw const AuthException('Session expired. Please log in again.');
+    }
   }
 }
