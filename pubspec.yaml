@@ -1,8 +1,8 @@
-name: audoack
+﻿name: audoack
 description: Audoack Flutter mobile application
 publish_to: "none"
 
-version: 1.0.1+2
+version: 1.0.2+3
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -16,6 +16,8 @@ dependencies:
   record: ^6.0.0
   path_provider: ^2.1.5
   flutter_secure_storage: ^9.2.4
+  in_app_review: ^2.0.10
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -34,3 +36,4 @@ flutter_launcher_icons:
   image_path: "assets/icon/audoack.png"
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/icon/audoack.png"
+

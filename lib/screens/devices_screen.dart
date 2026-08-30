@@ -5,15 +5,20 @@ import '../services/api_service.dart';
 import '../services/live_recording_service.dart';
 import 'analysis_screen.dart';
 import 'login_screen.dart';
+import 'settings_screen.dart';
 
 class DevicesScreen extends StatefulWidget {
   final String username;
   final ApiService apiService;
+  final ThemeMode themeMode;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
 
   const DevicesScreen({
     super.key,
     required this.username,
     required this.apiService,
+    required this.themeMode,
+    required this.onThemeModeChanged,
   });
 
   @override
@@ -74,7 +79,11 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => LoginScreen(apiService: widget.apiService),
+        builder: (_) => LoginScreen(
+          apiService: widget.apiService,
+          themeMode: widget.themeMode,
+          onThemeModeChanged: widget.onThemeModeChanged,
+        ),
       ),
       (_) => false,
     );
@@ -179,7 +188,11 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => LoginScreen(apiService: widget.apiService),
+        builder: (_) => LoginScreen(
+          apiService: widget.apiService,
+          themeMode: widget.themeMode,
+          onThemeModeChanged: widget.onThemeModeChanged,
+        ),
       ),
       (_) => false,
     );
@@ -199,6 +212,20 @@ class _DevicesScreenState extends State<DevicesScreen> {
         title: const Text('My Devices'),
         actions: [
           IconButton(onPressed: loadDevices, icon: const Icon(Icons.refresh)),
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SettingsScreen(
+                    themeMode: widget.themeMode,
+                    onThemeModeChanged: widget.onThemeModeChanged,
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings_outlined),
+          ),
           IconButton(onPressed: logout, icon: const Icon(Icons.logout)),
         ],
       ),
@@ -216,10 +243,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
           children: [
             Text(error!),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: loadDevices,
-              child: const Text('Retry'),
-            ),
+            ElevatedButton(onPressed: loadDevices, child: const Text('Retry')),
           ],
         ),
       );
@@ -291,11 +315,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
               onChanged: recording
                   ? null
                   : (value) {
-                      if (value != null) {
-                        setState(() {
-                          selectedInterval = value;
-                        });
-                      }
+                      if (value != null) setState(() => selectedInterval = value);
                     },
             ),
             const SizedBox(height: 16),
@@ -340,10 +360,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
         children: [
           SizedBox(
             width: 90,
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
+            child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
           Expanded(child: Text(value)),
         ],
@@ -357,14 +374,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
       child: Card(
         child: ListTile(
           contentPadding: const EdgeInsets.all(16),
-          leading: const CircleAvatar(
-            radius: 25,
-            child: Icon(Icons.mic),
-          ),
-          title: Text(
-            device.name,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          leading: const CircleAvatar(radius: 25, child: Icon(Icons.mic)),
+          title: Text(device.name, style: const TextStyle(fontWeight: FontWeight.bold)),
           subtitle: Text('Device ID: ${device.id}'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {

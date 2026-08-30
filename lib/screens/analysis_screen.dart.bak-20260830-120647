@@ -74,7 +74,13 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
 
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => LoginScreen(apiService: widget.apiService, onThemeModeChanged: (_) {}),
+        builder: (_) => LoginScreen(
+          apiService: widget.apiService,
+          themeMode: Theme.of(context).brightness == Brightness.dark
+              ? ThemeMode.dark
+              : ThemeMode.light,
+          onThemeModeChanged: (_) {},
+        ),
       ),
       (_) => false,
     );
@@ -385,9 +391,5 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     );
   }
 }
-
-
-
-
 
 

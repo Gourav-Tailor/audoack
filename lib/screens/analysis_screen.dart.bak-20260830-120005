@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -74,7 +74,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
 
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => LoginScreen(apiService: widget.apiService, onThemeModeChanged: (_) {}),
+        builder: (_) => LoginScreen(apiService: widget.apiService),
       ),
       (_) => false,
     );
@@ -385,9 +385,3 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     );
   }
 }
-
-
-
-
-
-
